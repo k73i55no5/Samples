@@ -62,11 +62,11 @@ class Register {
 	void print() {
 		System.out.println(value);
 	}
-	void load(Register register_src) {
-		value = register_src.value();
+	void load(Register source) {
+		value = source.value();
 	}
-	void calculate(Register register_src, int operand) {
-		value = register_src.value() + operand;
+	void calculate(Register source, int operand) {
+		value = source.value() + operand;
 	}
 	void reset() { value = 0; }
 	int value() { return value; }
@@ -105,16 +105,16 @@ enum CommandConstants {
 		})),
 	LOADER(new Command("LD([ABC]) ([ABC])",
 		m -> {
-			String register_tgt = m.group(1);
-			Register register_src = RegisterConstants.get(m.group(2));
-			RegisterConstants.get(register_tgt).load(register_src);
+			String target = m.group(1);
+			Register source = RegisterConstants.get(m.group(2));
+			RegisterConstants.get(target).load(source);
 		})),
 	CALCULATABLE_LOADER(new Command("LD([ABC]) (-?\\d{1,3}),([abc])",
 		m -> {
-			String register_tgt = m.group(1);
+			String target = m.group(1);
 			int operand = Integer.parseInt(m.group(2));
-			Register register_src = RegisterConstants.get(m.group(3).toUpperCase());
-			RegisterConstants.get(register_tgt).calculate(register_src, operand);
+			Register source = RegisterConstants.get(m.group(3).toUpperCase());
+			RegisterConstants.get(target).calculate(source, operand);
 		})),
 	INITIALIZER(new Command("IT([ABC])",
 		m -> {
