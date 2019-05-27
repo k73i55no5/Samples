@@ -19,19 +19,15 @@ public final class MainPanel extends JPanel {
 		FRUIT("果物リスト", mainService.showFruitList()),
 		MEASURE_WORD("単位リスト", mainService.showMeasureWordList()),;
 
-		private String text;
-		private ActionListener listener;
+		private JButton button;
 
 		private Button(String text, ActionListener listener) {
-			this.text = text;
-			this.listener = listener;
-		}
-
-		JButton get() {
 			JButton button = new JButton(text);
 			button.addActionListener(listener);
-			return button;
+			this.button = button;
 		}
+
+		JButton get() { return button; }
 	}
 
 	private static MainService mainService = MainServiceImpl.getInstance();

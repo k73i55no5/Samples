@@ -3,12 +3,11 @@ package k73i55no5.refactorers.student190520;
 import java.awt.EventQueue;
 import java.awt.Toolkit;
 
-import javax.swing.JPanel;
 import javax.swing.UIManager;
 
 import k73i55no5.refactorers.student190520.view.MainFrame;
 
-final class Main extends JPanel {
+final class Main {
 
 	private Main() {
 		try {
