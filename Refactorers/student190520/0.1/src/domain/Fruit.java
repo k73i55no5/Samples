@@ -1,4 +1,4 @@
-package k73i55no5.refactorers.student190520.domain;
+﻿package k73i55no5.refactorers.student190520.domain;
 
 class Fruit {
 	private String name; // 果物の名前

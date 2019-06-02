@@ -1,4 +1,4 @@
-package k73i55no5.refactorers.student190520.domain;
+﻿package k73i55no5.refactorers.student190520.domain;
 
 enum FruitConstants {
 	APPLE(new Fruit("りんご", MeasureWord.KO)),

@@ -1,4 +1,4 @@
-package k73i55no5.refactorers.student190520.domain;
+﻿package k73i55no5.refactorers.student190520.domain;
 
 enum StudentConstants {
 	ANDO(new Student("安藤さん", FruitConstants.APPLE, 5)),

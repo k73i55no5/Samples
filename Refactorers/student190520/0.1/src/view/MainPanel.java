@@ -1,7 +1,10 @@
-package k73i55no5.refactorers.student190520.view;
+﻿package k73i55no5.refactorers.student190520.view;
 
 import java.awt.BorderLayout;
 import java.awt.event.ActionListener;
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import javax.swing.BoxLayout;
@@ -9,15 +12,14 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
-import k73i55no5.refactorers.student190520.domain.MainService;
-import k73i55no5.refactorers.student190520.domain.MainServiceImpl;
+import k73i55no5.refactorers.student190520.domain.properties.ListToShow;
 
-public final class MainPanel extends JPanel {
+final class MainPanel extends JPanel {
 
 	enum Button {
-		STUDENT("生徒リスト", mainService.showStudentList()),
-		FRUIT("果物リスト", mainService.showFruitList()),
-		MEASURE_WORD("単位リスト", mainService.showMeasureWordList()),;
+		STUDENT("生徒リスト", e -> firePropertyChange(ListToShow.STUDENT)),
+		FRUIT("果物リスト", e -> firePropertyChange(ListToShow.FRUIT)),
+		MEASURE_WORD("単位リスト", e -> firePropertyChange(ListToShow.MEASURE_WORD)),;
 
 		private JButton button;
 
@@ -30,10 +32,11 @@ public final class MainPanel extends JPanel {
 		JButton get() { return button; }
 	}
 
-	private static MainService mainService = MainServiceImpl.getInstance();
+	private static PropertyChangeSupport pcs;
 
 	private MainPanel() {
 		super(new BorderLayout());
+		// UIを初期化
 		JPanel west = new JPanel() {{
 			setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 			setBorder(new EmptyBorder(5, 5, 5, 0));
@@ -42,13 +45,28 @@ public final class MainPanel extends JPanel {
 			.forEach(this::add);
 		}};
 		JPanel center = new JPanel() {{
-			add(mainService.getJScrollPaneOfList());
+			add(MainList.getInstance().getJScrollPane());
 		}};
 		add(west, BorderLayout.WEST);
 		add(center, BorderLayout.CENTER);
 	}
 
-	public static MainPanel getInstance() { return Holder.INSTANCE; }
+	// 既存のaddPropertyChangeListenerをオーバーライドさせると不具合が起きることがある。
+	public void addPropertyChangeListenerToPcs(PropertyChangeListener listener) {
+		// クラス初期化時のぬるぽ防止用
+		pcs = Optional.ofNullable(pcs).orElse(new PropertyChangeSupport(this));
+		pcs.addPropertyChangeListener(listener);
+	}
+
+	public void removePropertyChangeListenerfromPcs(PropertyChangeListener listener) {
+		pcs.removePropertyChangeListener(listener);
+	}
+
+	private static void firePropertyChange(ListToShow listToShow) {
+		pcs.firePropertyChange(ListToShow.class.getSimpleName(), "", listToShow);
+	}
+
+	static MainPanel getInstance() { return Holder.INSTANCE; }
 	private static class Holder {
 		static final MainPanel INSTANCE = new MainPanel();
 	}

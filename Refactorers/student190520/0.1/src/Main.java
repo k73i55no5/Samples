@@ -5,7 +5,7 @@ import java.awt.Toolkit;
 
 import javax.swing.UIManager;
 
-import k73i55no5.refactorers.student190520.view.MainFrame;
+import k73i55no5.refactorers.student190520.view.MainController;
 
 final class Main {
 
@@ -16,7 +16,7 @@ final class Main {
 			e.printStackTrace();
 			Toolkit.getDefaultToolkit().beep();
 		}
-		MainFrame.getInstance().setVisible(true);
+		MainController.getInstance();
 	}
 
 	public static void main(String[] args) {
