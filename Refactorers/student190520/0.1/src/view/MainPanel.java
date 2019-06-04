@@ -1,9 +1,8 @@
-﻿package k73i55no5.refactorers.student190520.view;
+package k73i55no5.refactorers.student190520.view;
 
 import java.awt.BorderLayout;
 import java.awt.event.ActionListener;
 import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeSupport;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -12,14 +11,18 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
-import k73i55no5.refactorers.student190520.domain.properties.ListToShow;
+import k73i55no5.api.event.MyPropertyChangeSupport;
+import k73i55no5.refactorers.student190520.domain.properties.List;
+import k73i55no5.refactorers.student190520.domain.properties.Mode;
 
 final class MainPanel extends JPanel {
 
 	enum Button {
-		STUDENT("生徒リスト", e -> firePropertyChange(ListToShow.STUDENT)),
-		FRUIT("果物リスト", e -> firePropertyChange(ListToShow.FRUIT)),
-		MEASURE_WORD("単位リスト", e -> firePropertyChange(ListToShow.MEASURE_WORD)),;
+		STUDENT(List.STUDENT.title(), e -> pcs.firePropertyChange(List.STUDENT)),
+		FRUIT(List.FRUIT.title(), e -> pcs.firePropertyChange(List.FRUIT)),
+		MEASURE_WORD(List.MEASURE_WORD.title(), e -> pcs.firePropertyChange(List.MEASURE_WORD)),
+		LOAD(Mode.LOAD.title(), e -> pcs.firePropertyChange(Mode.LOAD)),
+		SAVE(Mode.SAVE.title(), e -> pcs.firePropertyChange(Mode.SAVE)),;
 
 		private JButton button;
 
@@ -32,7 +35,7 @@ final class MainPanel extends JPanel {
 		JButton get() { return button; }
 	}
 
-	private static PropertyChangeSupport pcs;
+	private static MyPropertyChangeSupport pcs;
 
 	private MainPanel() {
 		super(new BorderLayout());
@@ -51,19 +54,13 @@ final class MainPanel extends JPanel {
 		add(center, BorderLayout.CENTER);
 	}
 
-	// 既存のaddPropertyChangeListenerをオーバーライドさせると不具合が起きることがある。
 	public void addPropertyChangeListenerToPcs(PropertyChangeListener listener) {
-		// クラス初期化時のぬるぽ防止用
-		pcs = Optional.ofNullable(pcs).orElse(new PropertyChangeSupport(this));
+		pcs = Optional.ofNullable(pcs).orElse(new MyPropertyChangeSupport(this));
 		pcs.addPropertyChangeListener(listener);
 	}
 
 	public void removePropertyChangeListenerfromPcs(PropertyChangeListener listener) {
 		pcs.removePropertyChangeListener(listener);
-	}
-
-	private static void firePropertyChange(ListToShow listToShow) {
-		pcs.firePropertyChange(ListToShow.class.getSimpleName(), "", listToShow);
 	}
 
 	static MainPanel getInstance() { return Holder.INSTANCE; }

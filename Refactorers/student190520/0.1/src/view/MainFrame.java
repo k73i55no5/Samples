@@ -1,4 +1,4 @@
-﻿package k73i55no5.refactorers.student190520.view;
+package k73i55no5.refactorers.student190520.view;
 
 import java.awt.BorderLayout;
 
