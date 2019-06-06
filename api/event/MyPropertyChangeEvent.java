@@ -7,7 +7,7 @@ import k73i55no5.api.util.PropertyKey;
 
 public class MyPropertyChangeEvent {
 
-	final PropertyChangeEvent evt;
+	private final PropertyChangeEvent evt;
 
 	public MyPropertyChangeEvent(PropertyChangeEvent evt) {
 		this.evt = evt;
