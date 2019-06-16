@@ -9,7 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -162,12 +162,12 @@ class Card implements Comparable<Card> {
 class Hand {
 	private String name;
 	private int score;
-	private BiFunction<Map<SuitConstants, Integer>, Map<RankConstants, Integer>, Boolean> judger;
+	private BiPredicate<Map<SuitConstants, Integer>, Map<RankConstants, Integer>> judger;
 
 	Hand(
 		String name,
 		int score,
-		BiFunction<Map<SuitConstants, Integer>, Map<RankConstants, Integer>, Boolean> judger)
+		BiPredicate<Map<SuitConstants, Integer>, Map<RankConstants, Integer>> judger)
 	{
 		this.name = name;
 		this.score = score;
@@ -183,7 +183,7 @@ class Hand {
 		List<RankConstants> ranks = cards.stream().map(Card::getRank).collect(Collectors.toList());
 		Map<RankConstants, Integer> rankMap = ranks.stream()
 			.collect(Collectors.groupingBy(Function.identity(), Collectors.summingInt(t -> 1)));
-		return judger.apply(suitMap, rankMap);
+		return judger.test(suitMap, rankMap);
 	}
 
 	int score() { return score; }
@@ -260,10 +260,15 @@ enum HandConstants {
 	STRAIGHT(new Hand("ストレート", 4,
 		(suitMap, rankMap) -> {
 			RankConstants[] ranks = rankMap.keySet().toArray(RankConstants[]::new);
-			return ranks[1].number() == ranks[0].number() + 1 &&
+			return (rankMap.containsKey(TEN) &&
+				rankMap.containsKey(JACK) &&
+				rankMap.containsKey(QUEEN) &&
+				rankMap.containsKey(KING) &&
+				rankMap.containsKey(ACE)) ||
+				(ranks[1].number() == ranks[0].number() + 1 &&
 				ranks[2].number() == ranks[1].number() + 1 &&
 				ranks[3].number() == ranks[2].number() + 1 &&
-				ranks[4].number() == ranks[3].number() + 1;
+				ranks[4].number() == ranks[3].number() + 1);
 		})),
 	THREE_OF_A_KIND(new Hand("スリーカード", 3,
 		(suitMap, rankMap) -> {
