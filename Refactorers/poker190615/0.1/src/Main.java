@@ -4,6 +4,7 @@ import static k73i55no5.refactorers.poker190615.JQKMark.*;
 import static k73i55no5.refactorers.poker190615.RankConstants.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -237,6 +238,7 @@ enum HandConstants {
 	STRAIGHT_FLUSH(new Hand("ストレートフラッシュ", 8,
 		(suitMap, rankMap) -> {
 			RankConstants[] ranks = rankMap.keySet().toArray(RankConstants[]::new);
+			Arrays.sort(ranks);
 			return suitMap.size() == 1 &&
 				ranks[1].number() == ranks[0].number() + 1 &&
 				ranks[2].number() == ranks[1].number() + 1 &&
@@ -245,13 +247,11 @@ enum HandConstants {
 		})),
 	FOUR_OF_A_KIND(new Hand("フォーカード", 7,
 		(suitMap, rankMap) -> {
-			return suitMap.size() == 2 && rankMap.containsValue(4);
+			return rankMap.containsValue(4);
 		})),
 	FULL_HOUSE(new Hand("フルハウス", 6,
 		(suitMap, rankMap) -> {
-			return suitMap.size() == 2 &&
-				rankMap.containsValue(2) &&
-				rankMap.containsValue(3);
+			return rankMap.containsValue(3) && rankMap.containsValue(2);
 		})),
 	FLUSH(new Hand("フラッシュ", 5,
 		(suitMap, rankMap) -> {
@@ -260,6 +260,7 @@ enum HandConstants {
 	STRAIGHT(new Hand("ストレート", 4,
 		(suitMap, rankMap) -> {
 			RankConstants[] ranks = rankMap.keySet().toArray(RankConstants[]::new);
+			Arrays.sort(ranks);
 			return (rankMap.containsKey(TEN) &&
 				rankMap.containsKey(JACK) &&
 				rankMap.containsKey(QUEEN) &&
