@@ -155,6 +155,10 @@ class Card implements Comparable<Card> {
 		return rank.compareTo(card.getRank());
 	}
 
+	@Override public String toString() {
+		return suit.toString().trim() + rank.toString();
+	}
+
 	List<String> getLinesOfMark() { return rank.lines(); }
 	RankConstants getRank() { return rank; }
 	SuitConstants getSuit() { return suit; }
@@ -287,6 +291,7 @@ enum HandConstants {
 	private Hand hand;
 
 	private HandConstants(Hand hand) { this.hand = hand; }
+
 	Hand hand() { return hand; }
 }
 
@@ -330,6 +335,7 @@ enum RankConstants {
 		}};
 	}
 
+	@Override public String toString() { return String.valueOf(number); }
 	int number() { return number; }
 	List<String> lines() { return lines; }
 }
