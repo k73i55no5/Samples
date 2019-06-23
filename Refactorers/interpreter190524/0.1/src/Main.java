@@ -10,33 +10,74 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Main {
+final class Main {
 
 	public static void main(String[] args) {
-		Scanner sc = new Scanner(System.in);
 		Interpreter interpreter = new Interpreter();
-		try {
+		try (Scanner sc = new Scanner(System.in)) {
 			while (true) interpreter.run(sc.nextLine());
-		} catch (Exception e) {
-			sc.close();
 		}
 	}
 }
 
 class Interpreter {
 	void run(String str) {
-		for (CommandConstants cst : CommandConstants.values()) {
-			Matcher m = cst.command().matcher(str);
-			if (m.matches()) { cst.command().consumer().accept(m); break; }
+		for (Command command : Command.values()) {
+			Matcher m = command.matcher(str);
+			if (m.matches()) { command.consumer().accept(m); break; }
 		}
+	}
+
+	String getRegisterValues() {
+		String registers = Stream.of(Register.values())
+			.map(r -> String.valueOf(r.value()))
+			.collect(Collectors.joining(" "));
+		return registers;
 	}
 }
 
-class Command {
-	private Pattern p;
-	private Consumer<Matcher> consumer;
+enum Command {
+	SET("ST([ABC]) (-?\\d{1,3})", m -> {
+		String register = m.group(1);
+		int value = Integer.parseInt(m.group(2));
+		Register.fromString(register).set(value);
+	}),
+	CALCULATE("(AD|SB)([ABC]) (-?\\d{1,3})", m -> {
+		String operation = m.group(1);
+		String register = m.group(2);
+		int operand = Integer.parseInt(m.group(3));
+		Register.fromString(register).calculate(operation, operand);
+	}),
+	PRINT("PR([ABC])", m -> {
+		String register = m.group(1);
+		Register.fromString(register).print();
+	}),
+	LOAD("LD([ABC]) ([ABC])", m -> {
+		String target = m.group(1);
+		Register source = Register.fromString(m.group(2));
+		Register.fromString(target).load(source);
+	}),
+	CALCULATE_AND_LOAD("LD([ABC]) (-?\\d{1,3}),([abc])", m -> {
+		String target = m.group(1);
+		int operand = Integer.parseInt(m.group(2));
+		Register source = Register.fromString(m.group(3).toUpperCase());
+		Register.fromString(target).calculate(source, operand);
+	}),
+	INITIALIZE("IT([ABC])", m -> {
+		String register= m.group(1);
+		Register.fromString(register).reset();
+	}),
+	PRINT_ALL("PAL", m -> {
+		String registers = Stream.of(Register.values())
+			.map(r -> String.valueOf(r.value()))
+			.collect(Collectors.joining(" "));
+		System.out.println(registers);
+	}),;
 
-	Command(String regex, Consumer<Matcher> consumer) {
+	private final Pattern p;
+	private final Consumer<Matcher> consumer;
+
+	private Command(String regex, Consumer<Matcher> consumer) {
 		p = Pattern.compile(regex);
 		this.consumer = consumer;
 	}
@@ -45,13 +86,19 @@ class Command {
 	Consumer<Matcher> consumer() { return consumer; }
 }
 
-class Register {
+enum Register {
+	A,
+	B,
+	C,;
+
 	private static final Map<String, IntBinaryOperator> OPERATORS = new HashMap<>() {{
 		put("AD", (l, r) -> l + r);
 		put("SB", (l, r) -> l - r);
 	}};
 
 	private int value;
+
+	static Register fromString(String register) { return valueOf(register); }
 
 	void set(int value) {
 		this.value = value;
@@ -71,67 +118,3 @@ class Register {
 	void reset() { value = 0; }
 	int value() { return value; }
 }
-
-enum RegisterConstants {
-	A(new Register()),
-	B(new Register()),
-	C(new Register()),;
-
-	private Register register;
-
-	private RegisterConstants(Register register) { this.register = register; }
-	int value() { return register.value(); }
-	static Register get(String register) { return valueOf(register).register; }
-}
-
-enum CommandConstants {
-	SETTER(new Command("ST([ABC]) (-?\\d{1,3})",
-		m -> {
-			String register = m.group(1);
-			int value = Integer.parseInt(m.group(2));
-			RegisterConstants.get(register).set(value);
-		})),
-	CALCULATOR(new Command("(AD|SB)([ABC]) (-?\\d{1,3})",
-		m -> {
-			String operation = m.group(1);
-			String register = m.group(2);
-			int operand = Integer.parseInt(m.group(3));
-			RegisterConstants.get(register).calculate(operation, operand);
-		})),
-	PRINTER(new Command("PR([ABC])",
-		m -> {
-			String register = m.group(1);
-			RegisterConstants.get(register).print();
-		})),
-	LOADER(new Command("LD([ABC]) ([ABC])",
-		m -> {
-			String target = m.group(1);
-			Register source = RegisterConstants.get(m.group(2));
-			RegisterConstants.get(target).load(source);
-		})),
-	CALCULATABLE_LOADER(new Command("LD([ABC]) (-?\\d{1,3}),([abc])",
-		m -> {
-			String target = m.group(1);
-			int operand = Integer.parseInt(m.group(2));
-			Register source = RegisterConstants.get(m.group(3).toUpperCase());
-			RegisterConstants.get(target).calculate(source, operand);
-		})),
-	INITIALIZER(new Command("IT([ABC])",
-		m -> {
-			String register= m.group(1);
-			RegisterConstants.get(register).reset();
-		})),
-	ALL_PRINTER(new Command("APR",
-		m -> {
-			String registers = Stream.of(RegisterConstants.values())
-				.map(r -> String.valueOf(r.value()))
-				.collect(Collectors.joining(" "));
-			System.out.println(registers);
-		})),;
-
-	private Command command;
-
-	private CommandConstants(Command command) { this.command = command; }
-	Command command() { return command; }
-}
-
