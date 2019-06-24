@@ -27,51 +27,34 @@ class Interpreter {
 			if (m.matches()) { command.consumer().accept(m); break; }
 		}
 	}
-
-	String getRegisterValues() {
-		String registers = Stream.of(Register.values())
-			.map(r -> String.valueOf(r.value()))
-			.collect(Collectors.joining(" "));
-		return registers;
-	}
+	// テスト用
+	String getRegisterValues() { return Register.getRegisterValues(); }
 }
 
 enum Command {
 	SET("ST([ABC]) (-?\\d{1,3})", m -> {
-		String register = m.group(1);
-		int value = Integer.parseInt(m.group(2));
-		Register.fromString(register).set(value);
+		Register.fromString(m.group(1)).set(m.group(2));
 	}),
 	CALCULATE("(AD|SB)([ABC]) (-?\\d{1,3})", m -> {
-		String operation = m.group(1);
-		String register = m.group(2);
-		int operand = Integer.parseInt(m.group(3));
-		Register.fromString(register).calculate(operation, operand);
+		Register.fromString(m.group(2)).calculate(m.group(1), m.group(3));
 	}),
 	PRINT("PR([ABC])", m -> {
-		String register = m.group(1);
-		Register.fromString(register).print();
+		Register.fromString(m.group(1)).print();
 	}),
 	LOAD("LD([ABC]) ([ABC])", m -> {
-		String target = m.group(1);
-		Register source = Register.fromString(m.group(2));
-		Register.fromString(target).load(source);
+		Register.fromString(m.group(1)).load(m.group(2));
 	}),
 	CALCULATE_AND_LOAD("LD([ABC]) (-?\\d{1,3}),([abc])", m -> {
-		String target = m.group(1);
-		int operand = Integer.parseInt(m.group(2));
-		Register source = Register.fromString(m.group(3).toUpperCase());
-		Register.fromString(target).calculate(source, operand);
+		Register.fromString(m.group(1)).calculateAndLoad(m.group(3).toUpperCase(), m.group(2));
 	}),
 	INITIALIZE("IT([ABC])", m -> {
-		String register= m.group(1);
-		Register.fromString(register).reset();
+		Register.fromString(m.group(1)).reset();
 	}),
 	PRINT_ALL("PAL", m -> {
-		String registers = Stream.of(Register.values())
-			.map(r -> String.valueOf(r.value()))
-			.collect(Collectors.joining(" "));
-		System.out.println(registers);
+		System.out.println(Register.getRegisterValues());
+	}),
+	END("(end|END)", m -> {
+		System.exit(0);
 	}),;
 
 	private final Pattern p;
@@ -100,21 +83,29 @@ enum Register {
 
 	static Register fromString(String register) { return valueOf(register); }
 
-	void set(int value) {
-		this.value = value;
+	static String getRegisterValues() {
+		String registers = Stream.of(values())
+			.map(r -> String.valueOf(r.value()))
+			.collect(Collectors.joining(" "));
+		return registers;
 	}
-	void calculate(String operation, int operand) {
-		value = OPERATORS.get(operation).applyAsInt(this.value, operand);
+
+	void set(String value) {
+		this.value = Integer.parseInt(value);
+	}
+	void calculate(String operation, String operand) {
+		value = OPERATORS.get(operation).applyAsInt(value, Integer.parseInt(operand));
 	}
 	void print() {
 		System.out.println(value);
 	}
-	void load(Register source) {
-		value = source.value();
+	void load(String source) {
+		value = fromString(source).value();
 	}
-	void calculate(Register source, int operand) {
-		value = source.value() + operand;
+	void calculateAndLoad(String source, String operand) {
+		value = fromString(source).value() + Integer.parseInt(operand);
 	}
 	void reset() { value = 0; }
+
 	int value() { return value; }
 }
