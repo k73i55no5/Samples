@@ -1,7 +1,8 @@
 package k73i55no5.refactorers.poker190615;
 
+import static k73i55no5.refactorers.poker190615.Human.*;
 import static k73i55no5.refactorers.poker190615.JQKMark.*;
-import static k73i55no5.refactorers.poker190615.RankConstants.*;
+import static k73i55no5.refactorers.poker190615.Rank.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,6 +14,7 @@ import java.util.Scanner;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 final class Main {
 
@@ -23,37 +25,28 @@ final class Main {
 }
 
 class PokerController {
-	private final HandRepository handRepository = new HandRepository();
+	private final HandRepository handRepository = HandRepository.INSTANCE;
 
 	void run() {
 		// コンソールにプレーヤーの手札を表示
 		Printer printer = new Printer();
-		Player player = handRepository.getPlayer();
-		printer.printHandsOf(player);
+		printer.printHands(PLAYER);
 		// プレーヤーに手札交換の有無を確認
 		printer.printExchange();
 		// プレーヤーが手札を交換するならば、リポジトリに交換を命令する。
 		handRepository.exchange();
 		// 手札を判定し、コンソールに結果を表示する。
 		Judger judger = new Judger();
-		Computer computer = handRepository.getComputer();
-		printer.printHandsOf(computer);
-		printer.printHand(judger.judgeHand(computer));
-		printer.printHandsOf(player);
-		printer.printHand(judger.judgeHand(player));
-		printer.printJudgement(judger.judgeScore(player, computer));
+		printer.printHands(COMPUTER);
+		printer.printHand(judger.judgeHand(COMPUTER));
+		printer.printHands(PLAYER);
+		printer.printHand(judger.judgeHand(PLAYER));
+		printer.printJudgement(judger.judgeScore());
 	}
 }
 
-class HandRepository {
-	private final Computer computer;
-	private final Player player;
-
-	HandRepository() {
-		// コンピューター、プレーヤーの順にカードをドロー
-		computer = new Computer();
-		player = new Player();
-	}
+enum HandRepository {
+	INSTANCE;
 
 	void exchange() {
 		Scanner sc = new Scanner(System.in);
@@ -61,17 +54,13 @@ class HandRepository {
 			String str = sc.nextLine();
 			if (str.equals("end")) break;
 			int index = Integer.parseInt(str);
-			player.exchangeAt(index);
+			PLAYER.exchangeAt(index);
 		}
 		sc.close();
 	}
-
-	Computer getComputer() { return computer; }
-	Player getPlayer() { return player; }
 }
 
 class Printer {
-
 	Printer() { System.out.println("    1         2         3         4         5      "); }
 
 	void printExchange() {
@@ -85,7 +74,7 @@ class Printer {
 	}
 
 	// トランプの絵柄を出力
-	void printHandsOf(Human human) {
+	void printHands(Human human) {
 		System.out.println(human.toString());
 		human.getCards().stream().map(Card::getSuit).forEach(System.out::print);
 		System.out.println();
@@ -107,24 +96,23 @@ class Judger {
 	String judgeHand(Human human) {
 		List<Card> cards = human.getCards();
 		Collections.sort(cards);
-		for (HandConstants cst : HandConstants.values()) {
-			Hand hand = cst.hand();
+		for (Hand hand : Hand.valuesExceptNoPair()) {
 			if (hand.matches(cards)) human.setHand(hand);
 		}
 		return human.getHand().toString();
 	}
 
-	String judgeScore(Player player, Computer computer) {
-		int player_score = player.getHand().score();
-		int computer_score = computer.getHand().score();
+	String judgeScore() {
+		int player_score = PLAYER.getHand().score();
+		int computer_score = COMPUTER.getHand().score();
 		return (player_score > computer_score) ? "あなたの勝ちです" :
 			(player_score < computer_score) ? "あなたの負けです" : "引き分けです";
 	}
 }
 
 class Card implements Comparable<Card> {
-	private SuitConstants suit;
-	private RankConstants rank;
+	private Suit suit;
+	private Rank rank;
 	// ジョーカーを除く52枚すべてのカードを示すオブジェクトを格納するイテレータ（以下「カード・イテレータ」という。）の初期化
 	static final Iterator<Card> CARDS;
 	// カードを引く枚数
@@ -134,8 +122,8 @@ class Card implements Comparable<Card> {
 	static {
 		// まずリストの生成
 		List<Card> hands = new ArrayList<>() {{
-			for (SuitConstants suit : SuitConstants.values()) {
-				for (RankConstants rank : RankConstants.values())
+			for (Suit suit : Suit.values()) {
+				for (Rank rank : Rank.values())
 					add(new Card(suit, rank));
 			}
 		}};
@@ -146,7 +134,7 @@ class Card implements Comparable<Card> {
 	}
 
 	// カードの初期化
-	Card(SuitConstants suit, RankConstants rank) {
+	Card(Suit suit, Rank rank) {
 		this.suit = suit;
 		this.rank = rank;
 	}
@@ -160,51 +148,29 @@ class Card implements Comparable<Card> {
 	}
 
 	List<String> getLinesOfMark() { return rank.lines(); }
-	RankConstants getRank() { return rank; }
-	SuitConstants getSuit() { return suit; }
+	Rank getRank() { return rank; }
+	Suit getSuit() { return suit; }
 }
 
-class Hand {
-	private String name;
-	private int score;
-	private BiPredicate<Map<SuitConstants, Integer>, Map<RankConstants, Integer>> judger;
+enum Human {
+	// カードをドローする順番で宣言
+	COMPUTER("コンピューター"),
+	PLAYER("プレーヤー"),;
 
-	Hand(
-		String name,
-		int score,
-		BiPredicate<Map<SuitConstants, Integer>, Map<RankConstants, Integer>> judger)
-	{
-		this.name = name;
-		this.score = score;
-		this.judger = judger;
-	}
-
-	@Override public String toString() { return name; }
-
-	boolean matches(List<Card> cards) {
-		List<SuitConstants> suits = cards.stream().map(Card::getSuit).collect(Collectors.toList());
-		Map<SuitConstants, Integer> suitMap = suits.stream()
-			.collect(Collectors.groupingBy(Function.identity(), Collectors.summingInt(t -> 1)));
-		List<RankConstants> ranks = cards.stream().map(Card::getRank).collect(Collectors.toList());
-		Map<RankConstants, Integer> rankMap = ranks.stream()
-			.collect(Collectors.groupingBy(Function.identity(), Collectors.summingInt(t -> 1)));
-		return judger.test(suitMap, rankMap);
-	}
-
-	int score() { return score; }
-}
-
-abstract class Human {
+	private final String name;
 	private final List<Card> cards;
-	private Hand hand = new Hand("ノーペア", 0, null); // 手役判定用オブジェクトを必要としないためnull
+	private Hand hand = Hand.NO_PAIR;
 
-	Human() {
+	Human(String name) {
+		this.name = name;
 		List<Card> cards = new ArrayList<>();
 		// カード・リストの先頭から順に5枚ドロー
 		for (int i = 0; i < Card.QUANTITY; i++) cards.add(Card.CARDS.next());
 		// カードをセット
 		this.cards = cards;
 	}
+
+	@Override public String toString() { return name; }
 
 	// 引数で指定した番目のカードを交換
 	void exchangeAt(int index) {
@@ -221,81 +187,7 @@ abstract class Human {
 	void setHand(Hand hand) { this.hand = hand; }
 }
 
-class Computer extends Human {
-	@Override public String toString() { return "コンピューター"; }
-}
-
-class Player extends Human {
-	@Override public String toString() { return "プレーヤー"; }
-}
-
-enum HandConstants {
-	ROYAL_STRAIGHT_FLUSH(new Hand("ロイヤルストレートフラッシュ", 9,
-		(suitMap, rankMap) -> {
-			return suitMap.size() == 1 &&
-				rankMap.containsKey(TEN) &&
-				rankMap.containsKey(JACK) &&
-				rankMap.containsKey(QUEEN) &&
-				rankMap.containsKey(KING) &&
-				rankMap.containsKey(ACE);
-		})),
-	STRAIGHT_FLUSH(new Hand("ストレートフラッシュ", 8,
-		(suitMap, rankMap) -> {
-			RankConstants[] ranks = rankMap.keySet().toArray(RankConstants[]::new);
-			Arrays.sort(ranks);
-			return suitMap.size() == 1 &&
-				ranks[1].number() == ranks[0].number() + 1 &&
-				ranks[2].number() == ranks[1].number() + 1 &&
-				ranks[3].number() == ranks[2].number() + 1 &&
-				ranks[4].number() == ranks[3].number() + 1;
-		})),
-	FOUR_OF_A_KIND(new Hand("フォーカード", 7,
-		(suitMap, rankMap) -> {
-			return rankMap.containsValue(4);
-		})),
-	FULL_HOUSE(new Hand("フルハウス", 6,
-		(suitMap, rankMap) -> {
-			return rankMap.containsValue(3) && rankMap.containsValue(2);
-		})),
-	FLUSH(new Hand("フラッシュ", 5,
-		(suitMap, rankMap) -> {
-			return suitMap.size() == 1;
-		})),
-	STRAIGHT(new Hand("ストレート", 4,
-		(suitMap, rankMap) -> {
-			RankConstants[] ranks = rankMap.keySet().toArray(RankConstants[]::new);
-			Arrays.sort(ranks);
-			return (rankMap.containsKey(TEN) &&
-				rankMap.containsKey(JACK) &&
-				rankMap.containsKey(QUEEN) &&
-				rankMap.containsKey(KING) &&
-				rankMap.containsKey(ACE)) ||
-				(ranks[1].number() == ranks[0].number() + 1 &&
-				ranks[2].number() == ranks[1].number() + 1 &&
-				ranks[3].number() == ranks[2].number() + 1 &&
-				ranks[4].number() == ranks[3].number() + 1);
-		})),
-	THREE_OF_A_KIND(new Hand("スリーカード", 3,
-		(suitMap, rankMap) -> {
-			return rankMap.containsValue(3);
-		})),
-	TWO_PAIR(new Hand("ツーペア", 2,
-		(suitMap, rankMap) -> {
-			return rankMap.size() == 3 && rankMap.containsValue(2);
-		})),
-	ONE_PAIR(new Hand("ワンペア", 1,
-		(suitMap, rankMap) -> {
-			return rankMap.size() == 4 && rankMap.containsValue(2);
-		})),;
-
-	private Hand hand;
-
-	private HandConstants(Hand hand) { this.hand = hand; }
-
-	Hand hand() { return hand; }
-}
-
-enum SuitConstants {
+enum Suit {
 	SPADE("スペード "),
 	HEART(" ハート   "),
 	DIAMOND(" ダイヤ  "),
@@ -303,11 +195,11 @@ enum SuitConstants {
 
 	private String suit;
 
-	private SuitConstants(String suit) { this.suit = suit; }
+	private Suit(String suit) { this.suit = suit; }
 	@Override public String toString() { return suit; }
 }
 
-enum RankConstants {
+enum Rank {
 	ACE(1, "|A      | ", "|       | ", "|   *   | ", "|       | ", "|       | "),
 	TWO(2, "|2      | ", "|   *   | ", "|       | ", "|   *   | ", "|       | "),
 	THREE(3, "|3      | ", "|   *   | ", "|   *   | ", "|   *   | ", "|       | "),
@@ -326,11 +218,11 @@ enum RankConstants {
 	private int number;
 	private List<String> lines;
 
-	private RankConstants(int number, String... mark) {
+	private Rank(int number, Object... marks) {
 		this.number = number;
 		lines = new ArrayList<>() {{
 			add(SIDES);
-			for (String str : mark) add(str);
+			for (Object mark : marks) add(mark.toString());
 			add(SIDES);
 		}};
 	}
@@ -340,9 +232,98 @@ enum RankConstants {
 	List<String> lines() { return lines; }
 }
 
-class JQKMark {
-	static final String HEAD = "| ( '-')| ";
-	static final String BODY = "| /==$=|| ";
-	static final String BODY_REVERSE = "||=$==/ | ";
-	static final String HEAD_REVERSE = "|(,-,)  | ";
+enum Hand {
+	ROYAL_STRAIGHT_FLUSH("ロイヤルストレートフラッシュ", 9, (suitMap, rankMap) -> {
+		return suitMap.size() == 1 &&
+			rankMap.containsKey(TEN) &&
+			rankMap.containsKey(JACK) &&
+			rankMap.containsKey(QUEEN) &&
+			rankMap.containsKey(KING) &&
+			rankMap.containsKey(ACE);
+	}),
+	STRAIGHT_FLUSH("ストレートフラッシュ", 8, (suitMap, rankMap) -> {
+		Rank[] ranks = rankMap.keySet().toArray(Rank[]::new);
+		Arrays.sort(ranks);
+		return suitMap.size() == 1 &&
+			ranks[1].number() == ranks[0].number() + 1 &&
+			ranks[2].number() == ranks[1].number() + 1 &&
+			ranks[3].number() == ranks[2].number() + 1 &&
+			ranks[4].number() == ranks[3].number() + 1;
+	}),
+	FOUR_OF_A_KIND("フォーカード", 7, (suitMap, rankMap) -> {
+		return rankMap.containsValue(4);
+	}),
+	FULL_HOUSE("フルハウス", 6, (suitMap, rankMap) -> {
+		return rankMap.containsValue(3) && rankMap.containsValue(2);
+	}),
+	FLUSH("フラッシュ", 5, (suitMap, rankMap) -> {
+		return suitMap.size() == 1;
+	}),
+	STRAIGHT("ストレート", 4, (suitMap, rankMap) -> {
+		Rank[] ranks = rankMap.keySet().toArray(Rank[]::new);
+		Arrays.sort(ranks);
+		return (rankMap.containsKey(TEN) &&
+			rankMap.containsKey(JACK) &&
+			rankMap.containsKey(QUEEN) &&
+			rankMap.containsKey(KING) &&
+			rankMap.containsKey(ACE)) ||
+			(ranks[1].number() == ranks[0].number() + 1 &&
+			ranks[2].number() == ranks[1].number() + 1 &&
+			ranks[3].number() == ranks[2].number() + 1 &&
+			ranks[4].number() == ranks[3].number() + 1);
+	}),
+	THREE_OF_A_KIND("スリーカード", 3, (suitMap, rankMap) -> {
+		return rankMap.containsValue(3);
+	}),
+	TWO_PAIR("ツーペア", 2, (suitMap, rankMap) -> {
+		return rankMap.size() == 3 && rankMap.containsValue(2);
+	}),
+	ONE_PAIR("ワンペア", 1, (suitMap, rankMap) -> {
+		return rankMap.size() == 4 && rankMap.containsValue(2);
+	}),
+	NO_PAIR("ノーペア", 0, null),; // 手役判定用オブジェクトを必要としないためnull
+
+	private final String name;
+	private final int score;
+	private final BiPredicate<Map<Suit, Integer>, Map<Rank, Integer>> judger;
+
+	Hand(
+		String name,
+		int score,
+		BiPredicate<Map<Suit, Integer>, Map<Rank, Integer>> judger)
+	{
+		this.name = name;
+		this.score = score;
+		this.judger = judger;
+	}
+
+	static Hand[] valuesExceptNoPair() {
+		return Stream.of(values()).filter(h -> h != NO_PAIR).toArray(Hand[]::new);
+	}
+
+	@Override public String toString() { return name; }
+
+	boolean matches(List<Card> cards) {
+		List<Suit> suits = cards.stream().map(Card::getSuit).collect(Collectors.toList());
+		Map<Suit, Integer> suitMap = suits.stream()
+			.collect(Collectors.groupingBy(Function.identity(), Collectors.summingInt(t -> 1)));
+		List<Rank> ranks = cards.stream().map(Card::getRank).collect(Collectors.toList());
+		Map<Rank, Integer> rankMap = ranks.stream()
+			.collect(Collectors.groupingBy(Function.identity(), Collectors.summingInt(t -> 1)));
+		return judger.test(suitMap, rankMap);
+	}
+
+	int score() { return score; }
+}
+
+enum JQKMark {
+	HEAD("| ( '-')| "),
+	BODY("| /==$=|| "),
+	BODY_REVERSE("||=$==/ | "),
+	HEAD_REVERSE("|(,-,)  | "),;
+
+	private String mark;
+
+	private JQKMark(String mark) { this.mark = mark; }
+	@Override public String toString() { return mark; }
 }

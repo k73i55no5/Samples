@@ -1,8 +1,8 @@
 package k73i55no5.refactorers.poker190615;
 
-import static k73i55no5.refactorers.poker190615.HandConstants.*;
-import static k73i55no5.refactorers.poker190615.RankConstants.*;
-import static k73i55no5.refactorers.poker190615.SuitConstants.*;
+import static k73i55no5.refactorers.poker190615.Hand.*;
+import static k73i55no5.refactorers.poker190615.Rank.*;
+import static k73i55no5.refactorers.poker190615.Suit.*;
 import static org.junit.Assert.*;
 
 import java.util.ArrayList;
@@ -10,117 +10,100 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-class HandTest {
+final class HandTest {
+
+	private final List<Card> cards = new ArrayList<>() {{
+		add(new Card(CLUB, TEN));
+		add(new Card(CLUB, JACK));
+		add(new Card(CLUB, QUEEN));
+		add(new Card(CLUB, KING));
+		add(new Card(CLUB, ACE));
+	}};
+
+	private Hand hand = get(ROYAL_STRAIGHT_FLUSH);
 
 	@Test void testMatches() {
-		List<Card> cards = new ArrayList<>() {{
-			add(new Card(CLUB, TEN));
-			add(new Card(CLUB, JACK));
-			add(new Card(CLUB, QUEEN));
-			add(new Card(CLUB, KING));
-			add(new Card(CLUB, ACE));
-		}};
-
-		Hand hand = ROYAL_STRAIGHT_FLUSH.hand();
-		System.out.println(hand);
-		System.out.println(cards);
-		assertTrue(hand.matches(cards));
+		assertTrue(matches());
 		cards.set(0, new Card(SPADE, TEN));
-		System.out.println(cards);
-		assertFalse(hand.matches(cards));
+		assertFalse(matches());
 		cards.set(0, new Card(CLUB, NINE));
-		System.out.println(cards);
-		assertFalse(hand.matches(cards));
+		assertFalse(matches());
 
-		hand = STRAIGHT_FLUSH.hand();
-		System.out.println(hand);
+		hand = get(STRAIGHT_FLUSH);
 		cards.set(1, new Card(CLUB, TEN));
 		cards.set(2, new Card(CLUB, JACK));
 		cards.set(3, new Card(CLUB, QUEEN));
 		cards.set(4, new Card(CLUB, KING));
-		System.out.println(cards);
-		assertTrue(hand.matches(cards));
+		assertTrue(matches());
 		cards.set(1, new Card(SPADE, TEN));
-		System.out.println(cards);
-		assertFalse(hand.matches(cards));
+		assertFalse(matches());
 
-		hand = FOUR_OF_A_KIND.hand();
-		System.out.println(hand);
+		hand = get(FOUR_OF_A_KIND);
 		cards.set(0, new Card(CLUB, NINE));
 		cards.set(1, new Card(SPADE, NINE));
 		cards.set(2, new Card(DIAMOND, NINE));
 		cards.set(3, new Card(HEART, NINE));
-		System.out.println(cards);
-		assertTrue(hand.matches(cards));
+		assertTrue(matches());
 		cards.set(3, new Card(HEART, EIGHT));
-		System.out.println(cards);
-		assertFalse(hand.matches(cards));
+		assertFalse(matches());
 
-		hand = FULL_HOUSE.hand();
-		System.out.println(hand);
+		hand = get(FULL_HOUSE);
 		cards.set(4, new Card(CLUB, EIGHT));
-		System.out.println(cards);
-		assertTrue(hand.matches(cards));
+		assertTrue(matches());
 		cards.set(0, new Card(CLUB, SEVEN));
-		System.out.println(cards);
-		assertFalse(hand.matches(cards));
+		assertFalse(matches());
 
-		hand = FLUSH.hand();
+		hand = get(FLUSH);
 		System.out.println(hand);
 		cards.set(1, new Card(CLUB, ACE));
 		cards.set(2, new Card(CLUB, TWO));
 		cards.set(3, new Card(CLUB, THREE));
-		System.out.println(cards);
-		assertTrue(hand.matches(cards));
+		assertTrue(matches());
 		cards.set(0, new Card(HEART, SEVEN));
-		System.out.println(cards);
-		assertFalse(hand.matches(cards));
+		assertFalse(matches());
 
-		hand = STRAIGHT.hand();
-		System.out.println(hand);
+		hand = get(STRAIGHT);
 		cards.set(0, new Card(HEART, NINE));
 		cards.set(1, new Card(SPADE, TEN));
 		cards.set(2, new Card(DIAMOND, JACK));
 		cards.set(3, new Card(HEART, QUEEN));
 		cards.set(4, new Card(CLUB, KING));
-		System.out.println(cards);
-		assertTrue(hand.matches(cards));
+		assertTrue(matches());
 		cards.set(0, new Card(HEART, ACE));
-		System.out.println(cards);
-		assertTrue(hand.matches(cards));
+		assertTrue(matches());
 		cards.set(0, new Card(HEART, TWO));
-		System.out.println(cards);
-		assertFalse(hand.matches(cards));
+		assertFalse(matches());
 
-		hand = THREE_OF_A_KIND.hand();
-		System.out.println(hand);
+		hand = get(THREE_OF_A_KIND);
 		cards.set(1, new Card(SPADE, TWO));
 		cards.set(2, new Card(DIAMOND, TWO));
-		System.out.println(cards);
-		assertTrue(hand.matches(cards));
+		assertTrue(matches());
 		cards.set(3, new Card(HEART, TWO));
-		System.out.println(cards);
-		assertFalse(hand.matches(cards));
+		assertFalse(matches());
 
-		hand = TWO_PAIR.hand();
-		System.out.println(hand);
+		hand = get(TWO_PAIR);
 		cards.set(1, new Card(SPADE, TWO));
 		cards.set(2, new Card(DIAMOND, THREE));
 		cards.set(3, new Card(HEART, THREE));
-		System.out.println(cards);
-		assertTrue(hand.matches(cards));
+		assertTrue(matches());
 		cards.set(2, new Card(DIAMOND, TWO));
-		System.out.println(cards);
-		assertFalse(hand.matches(cards));
+		assertFalse(matches());
 
-		hand = ONE_PAIR.hand();
-		System.out.println(hand);
+		hand = get(ONE_PAIR);
 		cards.set(2, new Card(DIAMOND, THREE));
 		cards.set(3, new Card(HEART, FOUR));
-		System.out.println(cards);
-		assertTrue(hand.matches(cards));
+		assertTrue(matches());
 		cards.set(0, new Card(HEART, ACE));
+		assertFalse(matches());
+	}
+
+	private Hand get(Hand hand) {
+		System.out.println(hand);
+		return hand;
+	}
+
+	private boolean matches() {
 		System.out.println(cards);
-		assertFalse(hand.matches(cards));
+		return hand.matches(cards);
 	}
 }
