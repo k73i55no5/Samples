@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -113,24 +114,24 @@ class Judger {
 class Card implements Comparable<Card> {
 	private Suit suit;
 	private Rank rank;
-	// ジョーカーを除く52枚すべてのカードを示すオブジェクトを格納するイテレータ（以下「カード・イテレータ」という。）の初期化
-	static final Iterator<Card> CARDS;
+	// ジョーカーを除く52枚すべてのカードを格納するイテレータ（以下「デッキ・イテレータ」という。）の初期化
+	static final Iterator<Card> DECK;
 	// カードを引く枚数
 	static final int QUANTITY = 5;
 
-	// カード・イテレータの初期化
+	// デッキ・イテレータの初期化
 	static {
 		// まずリストの生成
-		List<Card> hands = new ArrayList<>() {{
+		List<Card> deck = new ArrayList<>() {{
 			for (Suit suit : Suit.values()) {
 				for (Rank rank : Rank.values())
 					add(new Card(suit, rank));
 			}
 		}};
 		// 予めシャッフルしておく。
-		Collections.shuffle(hands);
+		Collections.shuffle(deck);
 		// イテレータに変換
-		CARDS = hands.iterator();
+		DECK = deck.iterator();
 	}
 
 	// カードの初期化
@@ -143,6 +144,7 @@ class Card implements Comparable<Card> {
 		return rank.compareTo(card.getRank());
 	}
 
+	// テスト用
 	@Override public String toString() {
 		return suit.toString().trim() + rank.toString();
 	}
@@ -161,11 +163,11 @@ enum Human {
 	private final List<Card> cards;
 	private Hand hand = Hand.NO_PAIR;
 
-	Human(String name) {
+	private Human(String name) {
 		this.name = name;
 		List<Card> cards = new ArrayList<>();
-		// カード・リストの先頭から順に5枚ドロー
-		for (int i = 0; i < Card.QUANTITY; i++) cards.add(Card.CARDS.next());
+		// デッキから5枚ドロー
+		for (int i = 0; i < Card.QUANTITY; i++) cards.add(Card.DECK.next());
 		// カードをセット
 		this.cards = cards;
 	}
@@ -174,7 +176,7 @@ enum Human {
 
 	// 引数で指定した番目のカードを交換
 	void exchangeAt(int index) {
-		cards.set(index - 1, Card.CARDS.next());
+		cards.set(index - 1, Card.DECK.next());
 	}
 
 	List<Card> getCards() { return cards; }
@@ -201,7 +203,7 @@ enum Suit {
 
 enum Rank {
 	ACE(1, "|A      | ", "|       | ", "|   *   | ", "|       | ", "|       | "),
-	TWO(2, "|2      | ", "|   *   | ", "|       | ", "|   *   | ", "|       | "),
+	DEUCE(2, "|2      | ", "|   *   | ", "|       | ", "|   *   | ", "|       | "),
 	THREE(3, "|3      | ", "|   *   | ", "|   *   | ", "|   *   | ", "|       | "),
 	FOUR(4, "|4      | ", "| *   * | ", "|       | ", "| *   * | ", "|       | "),
 	FIVE(5, "|5      | ", "| *   * | ", "|   *   | ", "| *   * | ", "|       | "),
@@ -233,87 +235,105 @@ enum Rank {
 }
 
 enum Hand {
-	ROYAL_STRAIGHT_FLUSH("ロイヤルストレートフラッシュ", 9, (suitMap, rankMap) -> {
-		return suitMap.size() == 1 &&
-			rankMap.containsKey(TEN) &&
-			rankMap.containsKey(JACK) &&
-			rankMap.containsKey(QUEEN) &&
-			rankMap.containsKey(KING) &&
-			rankMap.containsKey(ACE);
+	ROYAL_STRAIGHT_FLUSH("ロイヤルストレートフラッシュ", 9, cards -> {
+		return Type.FLUSH.matches(cards) && Type.BROADWAY.matches(cards);
 	}),
-	STRAIGHT_FLUSH("ストレートフラッシュ", 8, (suitMap, rankMap) -> {
-		Rank[] ranks = rankMap.keySet().toArray(Rank[]::new);
-		Arrays.sort(ranks);
-		return suitMap.size() == 1 &&
-			ranks[1].number() == ranks[0].number() + 1 &&
-			ranks[2].number() == ranks[1].number() + 1 &&
-			ranks[3].number() == ranks[2].number() + 1 &&
-			ranks[4].number() == ranks[3].number() + 1;
+	STRAIGHT_FLUSH("ストレートフラッシュ", 8, cards -> {
+		return Type.FLUSH.matches(cards) && Type.STRAIGHT.matches(cards);
 	}),
-	FOUR_OF_A_KIND("フォーカード", 7, (suitMap, rankMap) -> {
-		return rankMap.containsValue(4);
+	FOUR_OF_A_KIND("フォーカード", 7, cards -> {
+		return Type.FOUR_OF_A_KIND.matches(cards);
 	}),
-	FULL_HOUSE("フルハウス", 6, (suitMap, rankMap) -> {
-		return rankMap.containsValue(3) && rankMap.containsValue(2);
+	FULL_HOUSE("フルハウス", 6, cards -> {
+		return Type.THREE_OF_A_KIND.matches(cards) && Type.TWO_OF_A_KIND.matches(cards);
 	}),
-	FLUSH("フラッシュ", 5, (suitMap, rankMap) -> {
-		return suitMap.size() == 1;
+	FLUSH("フラッシュ", 5, cards -> {
+		return Type.FLUSH.matches(cards);
 	}),
-	STRAIGHT("ストレート", 4, (suitMap, rankMap) -> {
-		Rank[] ranks = rankMap.keySet().toArray(Rank[]::new);
-		Arrays.sort(ranks);
-		return (rankMap.containsKey(TEN) &&
-			rankMap.containsKey(JACK) &&
-			rankMap.containsKey(QUEEN) &&
-			rankMap.containsKey(KING) &&
-			rankMap.containsKey(ACE)) ||
-			(ranks[1].number() == ranks[0].number() + 1 &&
-			ranks[2].number() == ranks[1].number() + 1 &&
-			ranks[3].number() == ranks[2].number() + 1 &&
-			ranks[4].number() == ranks[3].number() + 1);
+	STRAIGHT("ストレート", 4, cards -> {
+		return Type.BROADWAY.matches(cards) || Type.STRAIGHT.matches(cards);
 	}),
-	THREE_OF_A_KIND("スリーカード", 3, (suitMap, rankMap) -> {
-		return rankMap.containsValue(3);
+	THREE_OF_A_KIND("スリーカード", 3, cards -> {
+		return Type.THREE_OF_A_KIND.matches(cards);
 	}),
-	TWO_PAIR("ツーペア", 2, (suitMap, rankMap) -> {
-		return rankMap.size() == 3 && rankMap.containsValue(2);
+	TWO_PAIR("ツーペア", 2, cards -> {
+		return Type.THREE_RANKS.matches(cards) && Type.TWO_OF_A_KIND.matches(cards);
 	}),
-	ONE_PAIR("ワンペア", 1, (suitMap, rankMap) -> {
-		return rankMap.size() == 4 && rankMap.containsValue(2);
+	ONE_PAIR("ワンペア", 1, cards -> {
+		return Type.FOUR_RANKS.matches(cards) && Type.TWO_OF_A_KIND.matches(cards);
 	}),
 	NO_PAIR("ノーペア", 0, null),; // 手役判定用オブジェクトを必要としないためnull
 
+	private static final Hand[] VALUES_EXCEPT_NO_PAIR =
+		Stream.of(values()).filter(h -> h != NO_PAIR).toArray(Hand[]::new);
+
 	private final String name;
 	private final int score;
-	private final BiPredicate<Map<Suit, Integer>, Map<Rank, Integer>> judger;
+	private final Predicate<List<Card>> matcher;
 
-	Hand(
-		String name,
-		int score,
-		BiPredicate<Map<Suit, Integer>, Map<Rank, Integer>> judger)
-	{
+	private Hand(String name, int score, Predicate<List<Card>> matcher) {
 		this.name = name;
 		this.score = score;
-		this.judger = judger;
-	}
-
-	static Hand[] valuesExceptNoPair() {
-		return Stream.of(values()).filter(h -> h != NO_PAIR).toArray(Hand[]::new);
+		this.matcher = matcher;
 	}
 
 	@Override public String toString() { return name; }
 
-	boolean matches(List<Card> cards) {
-		List<Suit> suits = cards.stream().map(Card::getSuit).collect(Collectors.toList());
-		Map<Suit, Integer> suitMap = suits.stream()
-			.collect(Collectors.groupingBy(Function.identity(), Collectors.summingInt(t -> 1)));
-		List<Rank> ranks = cards.stream().map(Card::getRank).collect(Collectors.toList());
-		Map<Rank, Integer> rankMap = ranks.stream()
-			.collect(Collectors.groupingBy(Function.identity(), Collectors.summingInt(t -> 1)));
-		return judger.test(suitMap, rankMap);
-	}
-
+	static Hand[] valuesExceptNoPair() { return VALUES_EXCEPT_NO_PAIR; }
+	boolean matches(List<Card> cards) { return matcher.test(cards); }
 	int score() { return score; }
+
+	private enum Type {
+		BROADWAY((suitMap, rankMap) -> {
+			return rankMap.containsKey(TEN) &&
+				rankMap.containsKey(JACK) &&
+				rankMap.containsKey(QUEEN) &&
+				rankMap.containsKey(KING) &&
+				rankMap.containsKey(ACE);
+		}),
+		FLUSH((suitMap, rankMap) -> {
+			return suitMap.size() == 1;
+		}),
+		STRAIGHT((suitMap, rankMap) -> {
+			Rank[] ranks = rankMap.keySet().toArray(Rank[]::new);
+			Arrays.sort(ranks);
+			return ranks[1].number() == ranks[0].number() + 1 &&
+				ranks[2].number() == ranks[1].number() + 1 &&
+				ranks[3].number() == ranks[2].number() + 1 &&
+				ranks[4].number() == ranks[3].number() + 1;
+		}),
+		FOUR_OF_A_KIND((suitMap, rankMap) -> {
+			return rankMap.containsValue(4);
+		}),
+		THREE_OF_A_KIND((suitMap, rankMap) -> {
+			return rankMap.containsValue(3);
+		}),
+		TWO_OF_A_KIND((suitMap, rankMap) -> {
+			return rankMap.containsValue(2);
+		}),
+		THREE_RANKS((suitMap, rankMap) -> {
+			return rankMap.size() == 3;
+		}),
+		FOUR_RANKS((suitMap, rankMap) -> {
+			return rankMap.size() == 4;
+		}),;
+
+		private final BiPredicate<Map<Suit, Integer>, Map<Rank, Integer>> matcher;
+
+		private Type(BiPredicate<Map<Suit, Integer>, Map<Rank, Integer>> matcher) {
+			this.matcher = matcher;
+		}
+
+		boolean matches(List<Card> cards) {
+			List<Suit> suits = cards.stream().map(Card::getSuit).collect(Collectors.toList());
+			Map<Suit, Integer> suitMap = suits.stream()
+				.collect(Collectors.groupingBy(Function.identity(), Collectors.summingInt(t -> 1)));
+			List<Rank> ranks = cards.stream().map(Card::getRank).collect(Collectors.toList());
+			Map<Rank, Integer> rankMap = ranks.stream()
+				.collect(Collectors.groupingBy(Function.identity(), Collectors.summingInt(t -> 1)));
+			return matcher.test(suitMap, rankMap);
+		}
+	}
 }
 
 enum JQKMark {

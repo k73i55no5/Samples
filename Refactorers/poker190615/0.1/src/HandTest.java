@@ -56,7 +56,7 @@ final class HandTest {
 		hand = get(FLUSH);
 		System.out.println(hand);
 		cards.set(1, new Card(CLUB, ACE));
-		cards.set(2, new Card(CLUB, TWO));
+		cards.set(2, new Card(CLUB, DEUCE));
 		cards.set(3, new Card(CLUB, THREE));
 		assertTrue(matches());
 		cards.set(0, new Card(HEART, SEVEN));
@@ -71,22 +71,22 @@ final class HandTest {
 		assertTrue(matches());
 		cards.set(0, new Card(HEART, ACE));
 		assertTrue(matches());
-		cards.set(0, new Card(HEART, TWO));
+		cards.set(0, new Card(HEART, DEUCE));
 		assertFalse(matches());
 
 		hand = get(THREE_OF_A_KIND);
-		cards.set(1, new Card(SPADE, TWO));
-		cards.set(2, new Card(DIAMOND, TWO));
+		cards.set(1, new Card(SPADE, DEUCE));
+		cards.set(2, new Card(DIAMOND, DEUCE));
 		assertTrue(matches());
-		cards.set(3, new Card(HEART, TWO));
+		cards.set(3, new Card(HEART, DEUCE));
 		assertFalse(matches());
 
 		hand = get(TWO_PAIR);
-		cards.set(1, new Card(SPADE, TWO));
+		cards.set(1, new Card(SPADE, DEUCE));
 		cards.set(2, new Card(DIAMOND, THREE));
 		cards.set(3, new Card(HEART, THREE));
 		assertTrue(matches());
-		cards.set(2, new Card(DIAMOND, TWO));
+		cards.set(2, new Card(DIAMOND, DEUCE));
 		assertFalse(matches());
 
 		hand = get(ONE_PAIR);
