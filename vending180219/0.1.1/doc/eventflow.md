@@ -1,7 +1,8 @@
 # ここは
 
-ここで取り上げている、自販機システムにおけるイベントフローを綴っています。
-https://qiita.com/k73i55no5/items/bd044bbf986a5ae7c5aa
+https://github.com/k73i55no5/Samples/tree/master/vending180219/0.1.1/src
+
+ここにまとめている、自販機システムのイベントフローを綴っています。
 
 # イベントフロー
 
