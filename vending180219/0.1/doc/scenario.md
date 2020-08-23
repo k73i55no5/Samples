@@ -1,8 +1,8 @@
 # これは？
 
-https://qiita.com/k73i55no5/items/46c3471110852c035997
+https://github.com/k73i55no5/Samples/tree/master/vending180219/0.1/src
 
-ここで取り上げている、自販機システムのシナリオを綴っています。
+ここにまとめている、自販機システムのシナリオを綴っています。
 
 # シナリオ
 
